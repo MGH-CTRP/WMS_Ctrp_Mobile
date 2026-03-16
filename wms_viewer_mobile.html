@@ -367,6 +367,30 @@ oday-left">
         <button class="slip-tab in-active" id="slip-btn-in" onclick="setSlipTab('in',this)" data-ml="slip_in">↓ 입고 이력</button>
         <button class="slip-tab" id="slip-btn-out" onclick="setSlipTab('out',this)" data-ml="slip_out">↑ 출고 이력</button>
       </div>
+      <!-- 입고 필터 -->
+      <div id="slip-in-filter" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <input id="ib-q-m" placeholder="🔍 서플라이어..." oninput="renderSlips()"
+          style="flex:1;min-width:100px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none">
+        <select id="ib-type-m" onchange="renderSlips()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 8px;font-size:12px;color:var(--text2);outline:none">
+          <option value="">전체</option>
+          <option value="import">🌐 수입</option>
+          <option value="local">🏠 로컬</option>
+        </select>
+        <input type="date" id="ib-date-from-m" onchange="renderSlips()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:11px;color:var(--text2);outline:none;width:130px">
+        <input type="date" id="ib-date-to-m" onchange="renderSlips()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:11px;color:var(--text2);outline:none;width:130px">
+      </div>
+      <!-- 출고 필터 -->
+      <div id="slip-out-filter" style="display:none;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <input id="ob-q-m" placeholder="🔍 커스터머..." oninput="renderSlips()"
+          style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);outline:none">
+        <input type="date" id="ob-date-from-m" onchange="renderSlips()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:11px;color:var(--text2);outline:none;width:130px">
+        <input type="date" id="ob-date-to-m" onchange="renderSlips()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:11px;color:var(--text2);outline:none;width:130px">
+      </div>
       <div id="slip-in-list"></div>
       <div id="slip-out-list" style="display:none"></div>
     </div>
@@ -414,7 +438,7 @@ var LANG = 'ko';
 var LANG_PACK = {
   ko:{
     dashboard:'대시보드', inventory:'재고', slips:'입출고', expiry:'유통기한',
-    total_stock:'총 재고', items_count:'등록 품목', items_unit:'아이템 수',
+    total_stock:'총 재고', items_count:'등록 품목', items_unit:'개',
     today_in:'오늘 입고', today_out:'오늘 출고',
     expiry_warn:'D-90 이내', type_ratio:'타입별 재고', today_activity:'오늘 입출고',
     expiry_alerts:'유통기한 주의', frozen:'냉동', chilled:'냉장', dry:'드라이',
@@ -430,10 +454,12 @@ var LANG_PACK = {
     ctn:'ctn', no_slip:'입출고 이력 없음',
     no_expiry:'임박 재고 없음',
     exp_sub:'임박·만료',
+    sup_import:'🌐 수입', sup_local:'🏠 로컬',
+    cases:'건',
   },
   id:{
     dashboard:'Dasbor', inventory:'Stok', slips:'Transaksi', expiry:'Kadaluarsa',
-    total_stock:'Total Stok', items_count:'Jumlah Item', items_unit:'jumlah item',
+    total_stock:'Total Stok', items_count:'Jumlah Item', items_unit:'item',
     today_in:'Masuk Hari Ini', today_out:'Keluar Hari Ini',
     expiry_warn:'dalam 30 hari', type_ratio:'Stok per Tipe', today_activity:'Aktivitas Hari Ini',
     expiry_alerts:'Peringatan Kadaluarsa', frozen:'Beku', chilled:'Dingin', dry:'Kering',
@@ -449,6 +475,8 @@ var LANG_PACK = {
     ctn:'ktn', no_slip:'Tidak ada riwayat',
     no_expiry:'Tidak ada stok hampir kadaluarsa',
     exp_sub:'Hampir·Kadaluarsa',
+    sup_import:'🌐 Impor', sup_local:'🏠 Lokal',
+    cases:' transaksi',
   }
 };
 function L(k){ return (LANG_PACK[LANG]||LANG_PACK.ko)[k]||(LANG_PACK.ko)[k]||k; }
@@ -513,6 +541,12 @@ function applyMobileLang(){
   document.querySelectorAll('[data-ml]').forEach(el=>{
     el.textContent=L(el.getAttribute('data-ml'));
   });
+  // 수입/로컬 필터 옵션 갱신
+  const ibTypeM=document.getElementById('ib-type-m');
+  if(ibTypeM&&ibTypeM.options.length>=3){
+    ibTypeM.options[1].text=L('sup_import');
+    ibTypeM.options[2].text=L('sup_local');
+  }
 }
 
 function showTab(name,el){
@@ -527,6 +561,8 @@ function setSlipTab(t){
   document.getElementById('slip-out-list').style.display = t==='out'?'block':'none';
   document.getElementById('slip-btn-in').className  = 'slip-tab '+(t==='in' ?'in-active':'');
   document.getElementById('slip-btn-out').className = 'slip-tab '+(t==='out'?'out-active':'');
+  document.getElementById('slip-in-filter').style.display  = t==='in' ?'flex':'none';
+  document.getElementById('slip-out-filter').style.display = t==='out'?'flex':'none';
 }
 
 async function gasFetch(url){
@@ -665,7 +701,7 @@ function renderDashboard(){
   document.getElementById('d-total').textContent=total.toLocaleString();
   document.getElementById('d-items').textContent=(DB.items||[]).length;
   document.getElementById('d-summary').textContent=
-    '품목 '+(DB.items||[]).length+'개 · 만료 '+expired+'건 · D-30 '+exp30+'건';
+    L('items_count')+' '+(DB.items||[]).length+' '+L('items_unit')+' · '+L('expired')+' '+expired+L('cases')+' · D-30 '+exp30+L('cases');
   document.getElementById('d-exp').textContent=expired+exp30+exp90;
 
   // 오늘 입출고
@@ -674,24 +710,24 @@ function renderDashboard(){
   const inQty=todayIn.reduce((a,s)=>a+s.lines.reduce((b,l)=>b+l.qty,0),0);
   const outQty=todayOut.reduce((a,s)=>a+s.lines.reduce((b,l)=>b+l.qty,0),0);
   document.getElementById('d-in-qty').textContent=inQty.toLocaleString();
-  document.getElementById('d-in-cnt').textContent=todayIn.length+'건';
+  document.getElementById('d-in-cnt').textContent=todayIn.length+(LANG==='id'?' transaksi':'건');
   document.getElementById('d-out-qty').textContent=outQty.toLocaleString();
-  document.getElementById('d-out-cnt').textContent=todayOut.length+'건';
+  document.getElementById('d-out-cnt').textContent=todayOut.length+(LANG==='id'?' transaksi':'건');
 
   if(todayIn.length){
     const names=[...new Set(todayIn.map(s=>(DB.suppliers||[]).find(x=>x.id===s.supplierId)?.name||'—'))];
-    document.getElementById('today-in-name').textContent=names.slice(0,2).join(', ')+(names.length>2?' 외 '+(names.length-2)+'곳':'');
+    document.getElementById('today-in-name').textContent=names.slice(0,2).join(', ')+(names.length>2?(LANG==='id'?' +lainnya '+(names.length-2):' 외 '+(names.length-2)+'곳'):'');
     document.getElementById('today-in-val').textContent=inQty.toLocaleString();
   } else {
-    document.getElementById('today-in-name').textContent='입고 없음';
+    document.getElementById('today-in-name').textContent=LANG==='id'?'Tidak ada masuk':'입고 없음';
     document.getElementById('today-in-val').textContent='0';
   }
   if(todayOut.length){
     const names=[...new Set(todayOut.map(s=>(DB.customers||[]).find(x=>x.id===s.customerId)?.name||'—'))];
-    document.getElementById('today-out-name').textContent=names.slice(0,2).join(', ')+(names.length>2?' 외 '+(names.length-2)+'곳':'');
+    document.getElementById('today-out-name').textContent=names.slice(0,2).join(', ')+(names.length>2?(LANG==='id'?' +lainnya '+(names.length-2):' 외 '+(names.length-2)+'곳'):'');
     document.getElementById('today-out-val').textContent=outQty.toLocaleString();
   } else {
-    document.getElementById('today-out-name').textContent='출고 없음';
+    document.getElementById('today-out-name').textContent=LANG==='id'?'Tidak ada keluar':'출고 없음';
     document.getElementById('today-out-val').textContent='0';
   }
 
@@ -716,7 +752,7 @@ function renderDashboard(){
   alerts.sort((a,b)=>a.dl-b.dl||b.qty-a.qty);
   const al=document.getElementById('alert-list');
   if(!alerts.length){
-    al.innerHTML='<div class="no-alert">✅&nbsp; 임박 재고 없음</div>';
+    al.innerHTML=`<div class="no-alert">✅&nbsp; ${L('no_alerts')}</div>`;
     return;
   }
   al.innerHTML=alerts.map(a=>{
@@ -801,6 +837,70 @@ function switchMobileInvTab(tab,el){
   renderInventory();
 }
 
+function supTypeBadge(supType){
+  const lbl = supType==='local' ? L('sup_local')||'🏠 로컬' : L('sup_import')||'🌐 수입';
+  return supType==='local'
+    ?`<span style="font-size:10px;background:var(--accent-l);color:var(--accent);padding:1px 6px;border-radius:4px;font-weight:600">${lbl}</span>`
+    :`<span style="font-size:10px;background:var(--info-l);color:var(--info);padding:1px 6px;border-radius:4px;font-weight:600">${lbl}</span>`;
+}
+
+function renderSlips(){
+  const ibQ=(document.getElementById('ib-q-m')?.value||'').toLowerCase();
+  const ibType=document.getElementById('ib-type-m')?.value||'';
+  const ibDf=document.getElementById('ib-date-from-m')?.value||'';
+  const ibDt=document.getElementById('ib-date-to-m')?.value||'';
+  const obQ=(document.getElementById('ob-q-m')?.value||'').toLowerCase();
+  const obDf=document.getElementById('ob-date-from-m')?.value||'';
+  const obDt=document.getElementById('ob-date-to-m')?.value||'';
+
+  let ibs=[...(DB.slips_in||[])].reverse().slice(0,200);
+  ibs=ibs.filter(s=>{
+    const sup=(DB.suppliers||[]).find(x=>x.id===s.supplierId);
+    if(ibQ&&!(sup?sup.name:'').toLowerCase().includes(ibQ)) return false;
+    if(ibType&&(sup?.supType||'import')!==ibType) return false;
+    if(ibDf&&s.date<ibDf) return false;
+    if(ibDt&&s.date>ibDt) return false;
+    return true;
+  });
+
+  let obs=[...(DB.slips_out||[])].reverse().slice(0,200);
+  obs=obs.filter(s=>{
+    const cus=(DB.customers||[]).find(x=>x.id===s.customerId);
+    if(obQ&&!(cus?cus.name:'').toLowerCase().includes(obQ)) return false;
+    if(obDf&&s.date<obDf) return false;
+    if(obDt&&s.date>obDt) return false;
+    return true;
+  });
+
+  document.getElementById('slip-in-list').innerHTML=ibs.length?ibs.map(s=>{
+    const sup=(DB.suppliers||[]).find(x=>x.id===s.supplierId);
+    return `<div class="slip-card" onclick="openSlipDetail('in','${s.id}')" style="cursor:pointer">
+      <div class="slip-head"><span class="slip-badge in-b">↓ 입고</span><span class="slip-id">${s.id}</span>${sup?supTypeBadge(sup.supType):''}<span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
+      <div class="slip-partner">${sup?sup.name:'—'}</div>
+      <div class="slip-foot"><span class="slip-date">${s.date}</span>
+        <div class="slip-nums">
+          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
+          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val inv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty"><div class="empty-ico">📋</div>${L('no_slip')}</div>`;
+
+  document.getElementById('slip-out-list').innerHTML=obs.length?obs.map(s=>{
+    const cus=(DB.customers||[]).find(x=>x.id===s.customerId);
+    return `<div class="slip-card" onclick="openSlipDetail('out','${s.id}')" style="cursor:pointer">
+      <div class="slip-head"><span class="slip-badge out-b">↑ 출고</span><span class="slip-id">${s.id}</span><span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
+      <div class="slip-partner">${cus?cus.name:'—'}</div>
+      <div class="slip-foot"><span class="slip-date">${s.date}</span>
+        <div class="slip-nums">
+          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
+          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val outv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty"><div class="empty-ico">📋</div>${L('no_slip')}</div>`;
+}
+
 function openSlipDetail(type, id){
   const slip = type==='in'
     ? (DB.slips_in||[]).find(s=>s.id===id)
@@ -863,36 +963,6 @@ function openSlipDetail(type, id){
   document.getElementById('slip-detail-modal').style.display='block';
 }
 
-function renderSlips(){
-  const ibs=[...(DB.slips_in||[])].reverse().slice(0,50);
-  const obs=[...(DB.slips_out||[])].reverse().slice(0,50);
-  document.getElementById('slip-in-list').innerHTML=ibs.length?ibs.map(s=>{
-    const sup=(DB.suppliers||[]).find(x=>x.id===s.supplierId);
-    return `<div class="slip-card" onclick="openSlipDetail('in','${s.id}')" style="cursor:pointer;active:opacity:.8">
-      <div class="slip-head"><span class="slip-badge in-b">↓ 입고</span><span class="slip-id">${s.id}</span><span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
-      <div class="slip-partner">${sup?sup.name:'—'}</div>
-      <div class="slip-foot"><span class="slip-date">${s.date}</span>
-        <div class="slip-nums">
-          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
-          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val inv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
-        </div>
-      </div>
-    </div>`;
-  }).join(''):`<div class="empty"><div class="empty-ico">📋</div>${L('no_slip')}</div>`;
-  document.getElementById('slip-out-list').innerHTML=obs.length?obs.map(s=>{
-    const cus=(DB.customers||[]).find(x=>x.id===s.customerId);
-    return `<div class="slip-card" onclick="openSlipDetail('out','${s.id}')" style="cursor:pointer">
-      <div class="slip-head"><span class="slip-badge out-b">↑ 출고</span><span class="slip-id">${s.id}</span><span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
-      <div class="slip-partner">${cus?cus.name:'—'}</div>
-      <div class="slip-foot"><span class="slip-date">${s.date}</span>
-        <div class="slip-nums">
-          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
-          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val outv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
-        </div>
-      </div>
-    </div>`;
-  }).join(''):`<div class="empty"><div class="empty-ico">📋</div>${L('no_slip')}</div>`;
-}
 
 function renderExpiry(){
   const stock=calcStock(),today=TODAY();
@@ -923,7 +993,7 @@ function renderExpiry(){
   let html='';
   if(urgent.length) html+=`<div style="font-size:11px;font-weight:700;color:#fb923c;padding:8px 4px 4px">&#9888; ${L('d30_within')} (${urgent.length})</div>`+urgent.map(makeCard).join('');
   if(warn90.length) html+=`<div style="font-size:11px;font-weight:700;color:#888;padding:12px 4px 4px">&#128197; ${L('d90_within')} (${warn90.length})</div>`+warn90.map(makeCard).join('');
-  document.getElementById('expiry-list').innerHTML=html||'<div class="empty"><div class="empty-ico">&#10003;</div>임박 재고 없음</div>';
+  document.getElementById('expiry-list').innerHTML=html||`<div class="empty"><div class="empty-ico">&#10003;</div>${L('no_expiry')}</div>`;
 }
 
 try{ const s=localStorage.getItem('fwms2_mobile_lang'); if(s) LANG=s; }catch(e){}
