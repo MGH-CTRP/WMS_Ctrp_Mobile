@@ -4,8 +4,8 @@
   "description": "Food Warehouse Mobile Viewer",
   "start_url": "./wms_viewer_mobile.html",
   "display": "standalone",
-  "background_color": "#f4f2ee",
-  "theme_color": "#2d6a4f",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
