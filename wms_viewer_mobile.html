@@ -395,10 +395,10 @@ oday-left">
 </nav>
 
 <script>
-// GAS URL / KEY는 코드에 저장하지 않음 — 첫 실행 시 설정에서 입력
-var GAS_URL = '';
-var GAS_KEY = '';
-// localStorage에 저장된 설정이 있으면 불러오기
+// GAS URL / KEY
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbyGQ3hb7B9uIDWiyrJawcpI5w8qErb0NyJ77xSbjvi9zhywmqLTnDw1KOwMDG7JHeK2/exec';
+var GAS_KEY = 'WMS2025!';
+// localStorage에 저장된 설정이 있으면 덮어쓰기 (설정에서 변경한 경우)
 (function(){
   try{
     const s=localStorage.getItem('fwms2_viewer_cfg');
@@ -456,7 +456,6 @@ function L(k){ return (LANG_PACK[LANG]||LANG_PACK.ko)[k]||(LANG_PACK.ko)[k]||k; 
 function openMobileSettings(){
   document.getElementById('ms-url').value=GAS_URL||'';
   document.getElementById('ms-key').value=GAS_KEY||'';
-  document.getElementById('ms-new-pw').value='';
   document.getElementById('ms-test-result').textContent='';
   document.getElementById('m-msettings').style.display='flex';
 }
@@ -469,8 +468,6 @@ function saveMobileSettings(){
   if(!url){document.getElementById('ms-test-result').textContent='❌ URL을 입력하세요';return;}
   GAS_URL=url; GAS_KEY=key;
   try{localStorage.setItem('fwms2_viewer_cfg',JSON.stringify({url,key}));}catch(e){}
-  // 비밀번호 저장
-  saveViewerPw();
   closeMobileSettings();
   loadData();
 }
@@ -931,82 +928,9 @@ function renderExpiry(){
 
 try{ const s=localStorage.getItem('fwms2_mobile_lang'); if(s) LANG=s; }catch(e){}
 applyMobileLang();
-
-// ── 비밀번호 잠금 ──
-const LOCK_KEY = 'fwms2_viewer_pw';
-const SESSION_KEY = 'fwms2_viewer_unlocked';
-
-function getStoredPw(){ try{ return localStorage.getItem(LOCK_KEY)||''; }catch(e){return '';} }
-function isUnlocked(){ try{ return sessionStorage.getItem(SESSION_KEY)==='1'; }catch(e){return false;} }
-function setUnlocked(){ try{ sessionStorage.setItem(SESSION_KEY,'1'); }catch(e){} }
-
-function checkLock(){
-  const pw = getStoredPw();
-  if(!pw || isUnlocked()){
-    // 비밀번호 미설정이거나 이미 인증된 세션
-    startApp();
-    return;
-  }
-  showLockScreen();
-}
-
-function showLockScreen(){
-  document.getElementById('lock-screen').style.display='flex';
-  setTimeout(()=>document.getElementById('lock-input').focus(), 300);
-}
-
-function hideLockScreen(){
-  document.getElementById('lock-screen').style.display='none';
-}
-
-function submitLock(){
-  const input = document.getElementById('lock-input').value;
-  const stored = getStoredPw();
-  if(input === stored){
-    setUnlocked();
-    hideLockScreen();
-    startApp();
-  } else {
-    const err = document.getElementById('lock-error');
-    err.style.display='block';
-    document.getElementById('lock-input').value='';
-    document.getElementById('lock-input').focus();
-    setTimeout(()=>err.style.display='none', 2000);
-  }
-}
-
-function startApp(){
-  loadData();
-  setInterval(loadData, 5*60*1000);
-}
-
-// 설정에서 비밀번호 변경
-function saveViewerPw(){
-  const np = document.getElementById('ms-new-pw').value.trim();
-  if(np){
-    localStorage.setItem(LOCK_KEY, np);
-    setUnlocked(); // 설정 후 바로 인증 상태
-  } else {
-    localStorage.removeItem(LOCK_KEY);
-  }
-}
-
-checkLock();
+loadData();
+setInterval(loadData, 5*60*1000);
 </script>
-
-<!-- 잠금 화면 -->
-<div id="lock-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:32px">
-  <div style="font-size:48px;margin-bottom:16px">🔒</div>
-  <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px">WMS Viewer</div>
-  <div style="font-size:13px;color:var(--text3);margin-bottom:32px">비밀번호를 입력하세요</div>
-  <div style="width:100%;max-width:320px">
-    <input id="lock-input" type="password" placeholder="비밀번호"
-      onkeydown="if(event.key==='Enter')submitLock()"
-      style="width:100%;box-sizing:border-box;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;color:var(--text);outline:none;text-align:center;letter-spacing:4px">
-    <div id="lock-error" style="display:none;color:var(--danger);font-size:12px;text-align:center;margin-top:10px">❌ 비밀번호가 틀렸습니다</div>
-    <button onclick="submitLock()" style="width:100%;margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">확인</button>
-  </div>
-</div>
 
 <div id="slip-detail-modal" style="display:none"></div>
 
@@ -1025,11 +949,6 @@ checkLock();
         <div style="font-size:11px;color:#888;margin-bottom:5px">비밀키</div>
         <input id="ms-key" type="text" placeholder="WMS2025!"
           style="width:100%;box-sizing:border-box;background:#2a2823;border:1px solid #333;border-radius:8px;padding:10px 12px;font-size:11px;color:#fff;outline:none">
-      </div>
-      <div style="border-top:1px solid #333;padding-top:12px;margin-top:4px">
-        <div style="font-size:11px;color:#888;margin-bottom:5px">🔒 뷰어 접속 비밀번호 <span style="color:#666">(비우면 잠금 해제)</span></div>
-        <input id="ms-new-pw" type="password" placeholder="비밀번호 설정 (선택)"
-          style="width:100%;box-sizing:border-box;background:#2a2823;border:1px solid #333;border-radius:8px;padding:10px 12px;font-size:13px;color:#fff;outline:none">
       </div>
       <div id="ms-test-result" style="font-size:11px;min-height:16px;color:#888"></div>
     </div>
