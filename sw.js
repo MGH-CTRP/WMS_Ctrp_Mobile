@@ -1,4 +1,4 @@
-const CACHE = 'wms-viewer-v1';
+const CACHE = 'wms-viewer-v3';
 const ASSETS = [
   './wms_viewer_mobile.html',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap'
