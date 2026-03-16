@@ -251,17 +251,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="stat-card" style="--c:var(--info)">
           <div class="stat-lbl" data-ml="items_count">등록 품목</div>
           <div class="stat-val" id="d-items">0</div>
-          <div class="stat-desc" data-ml="items_unit">아이템 수</div>
+          <div class="stat-desc" id="d-items-unit" data-ml="items_unit">개</div>
         </div>
         <div class="stat-card" style="--c:var(--accent)">
           <div class="stat-lbl" data-ml="today_in">오늘 입고</div>
           <div class="stat-val" id="d-in-qty">0</div>
-          <div class="stat-desc" id="d-in-cnt">0건</div>
+          <div class="stat-desc" id="d-in-cnt">0</div>
         </div>
         <div class="stat-card" style="--c:var(--orange)">
           <div class="stat-lbl" data-ml="today_out">오늘 출고</div>
           <div class="stat-val" id="d-out-qty">0</div>
-          <div class="stat-desc" id="d-out-cnt">0건</div>
+          <div class="stat-desc" id="d-out-cnt">0</div>
         </div>
         <div class="stat-card" style="--c:var(--danger)">
           <div class="stat-lbl" data-ml="expiry_warn">D-30 이내</div>
@@ -301,9 +301,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="section-box">
         <div class="section-title" data-ml="today_activity">오늘 입출고</div>
         <div class="today-row">
-          <div class="t
-
-oday-left">
+          <div class="today-left">
             <div class="today-badge t-in">↓</div>
             <div>
               <div class="today-lbl" data-ml="stock_in">입고</div>
@@ -710,9 +708,9 @@ function renderDashboard(){
   const inQty=todayIn.reduce((a,s)=>a+s.lines.reduce((b,l)=>b+l.qty,0),0);
   const outQty=todayOut.reduce((a,s)=>a+s.lines.reduce((b,l)=>b+l.qty,0),0);
   document.getElementById('d-in-qty').textContent=inQty.toLocaleString();
-  document.getElementById('d-in-cnt').textContent=todayIn.length+(LANG==='id'?' transaksi':'건');
+  document.getElementById('d-in-cnt').textContent=todayIn.length+(LANG==='id'?' trx':'건');
   document.getElementById('d-out-qty').textContent=outQty.toLocaleString();
-  document.getElementById('d-out-cnt').textContent=todayOut.length+(LANG==='id'?' transaksi':'건');
+  document.getElementById('d-out-cnt').textContent=todayOut.length+(LANG==='id'?' trx':'건');
 
   if(todayIn.length){
     const names=[...new Set(todayIn.map(s=>(DB.suppliers||[]).find(x=>x.id===s.supplierId)?.name||'—'))];
