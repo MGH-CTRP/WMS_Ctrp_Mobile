@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="WMS Viewer">
+<meta name="theme-color" content="#2d6a4f">
+<link rel="manifest" href="manifest.json">
+<title>WMS Citeureup Mobile Reviewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f2ee; --bg2:#eceae6; --bg3:#e4e1dc;
+  --surface:#ffffff; --surface2:#f0ede8;
+  --border:#d8d4ce; --border2:#ccc8c2;
+  --text:#1a1814; --text2:#6b6560; --text3:#a09890;
+  --accent:#2d6a4f; --accent-d:#1b4332; --accent-l:rgba(45,106,79,.10);
+  --warn:#a07818; --warn-l:rgba(160,120,24,.10);
+  --danger:#b83232; --danger-l:rgba(184,50,50,.10);
+  --orange:#c05a10; --orange-l:rgba(192,90,16,.10);
+  --info:#1d5fa8; --info-l:rgba(29,95,168,.10);
+  --frozen:#1d5fa8; --chilled:#1a7a5e; --dry:#6b6560;
+  --font:'Noto Sans KR',sans-serif; --mono:'JetBrains Mono',monospace;
+  --r:10px; --r2:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{background:var(--bg);}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;padding-bottom:72px;}
+
+/* HEADER */
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:13px 16px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.hlogo{display:flex;align-items:center;gap:10px;}
+.hlogo-ico{width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;}
+.hlogo-name{font-size:16px;font-weight:700;}
+.hlogo-sub{font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
+.hstatus{text-align:right;}
+.hstatus-time{font-size:10px;color:var(--text3);font-family:var(--mono);}
+.hstatus-dot{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--accent);font-weight:600;margin-top:3px;}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* BOTTOM NAV */
+.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--bg2);border-top:1px solid var(--border);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:10px 4px 8px;gap:3px;cursor:pointer;border:none;
+  background:transparent;color:var(--text3);font-family:var(--font);font-size:10px;font-weight:500;transition:color .15s;}
+.bn.active{color:var(--accent);}
+.bn-ico{font-size:18px;line-height:1;}
+.bn-line{width:20px;height:2px;border-radius:1px;background:var(--accent);display:none;margin-top:2px;}
+.bn.active .bn-line{display:block;}
+
+/* CONTENT */
+.content{padding:14px 14px 0;}
+.panel{display:none;}
+.panel.active{display:block;animation:fadeUp .18s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px;color:var(--text3);}
+.loader{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-card{background:var(--danger-l);border:1px solid rgba(248,113,113,.3);border-radius:var(--r2);padding:16px;margin-bottom:14px;color:var(--danger);font-size:13px;line-height:1.6;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--surface) 0%,var(--bg2) 100%);
+  border:1px solid var(--border2);border-radius:var(--r2);padding:16px;margin-bottom:12px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(74,222,128,.08) 0%,transparent 70%);}
+.hero-label{font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.hero-val{font-size:44px;font-weight:900;font-family:var(--mono);color:var(--accent);line-height:1;}
+.hero-unit{font-size:14px;color:var(--text2);font-weight:400;margin-left:4px;}
+.hero-sub{font-size:11px;color:var(--text3);margin-top:6px;}
+
+/* STATS GRID */
+.stats4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--c,var(--accent));}
+.stat-lbl{font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:.8px;text-transform:uppercase;}
+.stat-val{font-size:26px;font-weight:800;font-family:var(--mono);color:var(--c,var(--accent));margin:4px 0 2px;line-height:1;}
+.stat-desc{font-size:10px;color:var(--text2);}
+
+/* TYPE SECTION */
+.section-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.section-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;
+  margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.section-title::before{content:'';display:inline-block;width:3px;height:11px;border-radius:2px;background:var(--accent);}
+.type-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.type-row:last-child{margin-bottom:0;}
+.type-ico{font-size:16px;width:22px;text-align:center;}
+.type-info{flex:1;}
+.type-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.type-bar-bg{height:5px;background:var(--border2);border-radius:3px;overflow:hidden;}
+.type-bar{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.type-qty{font-size:13px;font-weight:700;font-family:var(--mono);color:var(--text2);min-width:52px;text-align:right;}
+
+/* TODAY SECTION */
+.today-row{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid var(--border);}
+.today-row:last-child{border-bottom:none;padding-bottom:0;}
+.today-left{display:flex;align-items:center;gap:10px;}
+.today-badge{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;}
+.t-in{background:var(--accent-l);color:var(--accent);}
+.t-out{background:var(--orange-l);color:var(--orange);}
+.today-lbl{font-size:10px;color:var(--text3);}
+.today-name{font-size:12px;font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.today-big{font-size:22px;font-weight:900;font-family:var(--mono);}
+.today-unit{font-size:10px;color:var(--text3);font-weight:400;}
+
+/* ALERT */
+.alert-header{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.alert-header::before{content:'';display:inline-block;width:3px;height:11px;border-radius:2px;background:var(--danger);}
+.alert-card{border-radius:var(--r);padding:11px 13px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;border:1px solid;}
+.alert-card.d0{background:var(--danger-l);border-color:rgba(248,113,113,.25);}
+.alert-card.d7{background:var(--warn-l);border-color:rgba(251,191,36,.2);}
+.alert-card.d30{background:var(--surface);border-color:var(--border);}
+.alert-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;}
+.alert-meta{font-size:10px;color:var(--text3);margin-top:1px;font-family:var(--mono);}
+.dday-pill{font-size:11px;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.dday-pill.d0{background:var(--danger);color:#fff;}
+.dday-pill.d7{background:var(--warn);color:#000;}
+.dday-pill.d30{background:var(--surface2);color:var(--text2);}
+.alert-qty{font-size:13px;font-weight:700;font-family:var(--mono);margin-top:3px;}
+.no-alert{background:var(--accent-l);border:1px solid rgba(74,222,128,.2);border-radius:var(--r);
+  padding:13px;display:flex;align-items:center;gap:8px;color:var(--accent);font-size:13px;font-weight:600;}
+
+/* INVENTORY */
+.toolbar{display:flex;gap:8px;margin-bottom:10px;}
+.search{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;}
+.search:focus{border-color:var(--accent);}
+.search::placeholder{color:var(--text3);}
+.fsel{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:10px 8px;font-family:var(--font);font-size:12px;color:var(--text2);outline:none;}
+.fsel option{background:var(--bg2);}
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:8px;}
+.item-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.item-name{font-size:14px;font-weight:700;line-height:1.3;}
+.item-brand{font-size:11px;color:var(--text3);margin-top:2px;}
+.item-total{font-size:22px;font-weight:800;font-family:var(--mono);color:var(--accent);}
+.item-unit{font-size:10px;color:var(--text3);}
+.type-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;border-radius:5px;font-size:10px;font-weight:700;margin-top:3px;}
+.tb-frozen{background:rgba(96,165,250,.15);color:var(--frozen);}
+.tb-chilled{background:rgba(52,211,153,.15);color:var(--chilled);}
+.tb-dry{background:rgba(163,160,154,.15);color:var(--dry);}
+.exp-rows{display:flex;flex-direction:column;gap:4px;}
+.exp-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;background:var(--bg3);}
+.exp-row.xdanger{background:var(--danger-l);}
+.exp-row.xwarn7{background:var(--warn-l);}
+.exp-row.xwarn30{background:rgba(251,146,60,.08);}
+.exp-date{font-size:12px;font-family:var(--mono);}
+.exp-row.xdanger .exp-date{color:var(--danger);}
+.exp-row.xwarn7 .exp-date{color:var(--warn);}
+.exp-row.xwarn30 .exp-date{color:var(--orange);}
+.exp-note{font-size:9px;font-weight:700;margin-left:5px;padding:1px 4px;border-radius:3px;}
+.exp-row.xdanger .exp-note{background:var(--danger);color:#fff;}
+.exp-row.xwarn7 .exp-note{background:var(--warn);color:#000;}
+.exp-row.xwarn30 .exp-note{color:var(--orange);}
+.exp-qty{font-size:15px;font-weight:700;font-family:var(--mono);}
+.exp-row.xdanger .exp-qty{color:var(--danger);}
+.exp-row.xwarn7 .exp-qty{color:var(--warn);}
+
+/* SLIPS */
+.slip-tabs{display:flex;gap:6px;margin-bottom:10px;}
+.slip-tab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text2);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.slip-tab.in-active{background:var(--accent-l);color:var(--accent);border-color:transparent;}
+.slip-tab.out-active{background:var(--orange-l);color:var(--orange);border-color:transparent;}
+.slip-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:8px;}
+.slip-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.slip-id{font-size:10px;font-family:var(--mono);color:var(--text3);}
+.slip-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;}
+.in-b{background:var(--accent-l);color:var(--accent);}
+.out-b{background:var(--orange-l);color:var(--orange);}
+.slip-partner{font-size:15px;font-weight:700;margin-bottom:6px;}
+.slip-foot{display:flex;justify-content:space-between;align-items:center;}
+.slip-date{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.slip-nums{display:flex;gap:16px;}
+.slip-num-lbl{font-size:9px;color:var(--text3);}
+.slip-num-val{font-size:18px;font-weight:800;font-family:var(--mono);}
+.inv{color:var(--accent);}
+.outv{color:var(--orange);}
+
+/* EXPIRY PANEL */
+.exp-card{background:var(--surface);border-left:3px solid var(--warn);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;}
+.exp-card.xdanger{border-left-color:var(--danger);}
+.exp-card-head{display:flex;justify-content:space-between;align-items:flex-start;}
+.exp-card-name{font-size:13px;font-weight:700;}
+.exp-card-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.dday-big{font-size:22px;font-weight:900;font-family:var(--mono);}
+.dday-big.dd{color:var(--danger);}
+.dday-big.dw{color:var(--warn);}
+.dday-big.de{color:var(--text3);}
+.exp-card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-ico{font-size:32px;margin-bottom:8px;opacity:.4;}
+
+/* FAB */
+.fab{position:fixed;top:70px;right:14px;z-index:200;background:var(--surface2);
+  border:1px solid var(--border2);color:var(--text2);width:36px;height:36px;
+  border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;transition:all .1s;box-shadow:0 2px 8px rgba(0,0,0,.10);}
+.fab:active{transform:scale(.93);}
+.fab.spinning{animation:spin .7s linear infinite;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hlogo">
+    <div class="hlogo-ico" id="m-logo">🥡</div>
+    <div>
+      <div class="hlogo-name">식품 WMS</div>
+      <div class="hlogo-sub">MANAGER VIEW</div>
+    </div>
+  </div>
+  <div class="hstatus" style="display:flex;align-items:center;gap:8px">
+    <button id="m-lang-btn" onclick="toggleLang()" style="background:rgba(255,255,255,.12);border:none;color:#aaa;font-size:10px;padding:4px 8px;border-radius:5px;cursor:pointer;font-family:var(--font)">🌐 KO</button>
+    <button onclick="openMobileSettings()" style="background:rgba(255,255,255,.12);border:none;color:#aaa;font-size:10px;padding:4px 8px;border-radius:5px;cursor:pointer;font-family:var(--font)">⚙️</button>
+    <div style="text-align:right">
+      <div class="hstatus-time" id="last-updated">—</div>
+      <div class="hstatus-dot"><span class="pulse"></span>READ ONLY</div>
+    </div>
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="loadData()">⟳</button>
+
+<div class="content">
+  <div id="error-box" class="error-card" style="display:none"></div>
+  <div id="loading" class="loading"><div class="loader"></div><div style="font-size:13px;margin-top:4px">불러오는 중...</div></div>
+
+  <div id="main-content" style="display:none">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="hero">
+        <div class="hero-label">TOTAL STOCK</div>
+        <div><span class="hero-val" id="d-total">0</span><span class="hero-unit">ctn</span></div>
+        <div class="hero-sub" id="d-summary">—</div>
+      </div>
+      <div class="stats4">
+        <div class="stat-card" style="--c:var(--info)">
+          <div class="stat-lbl" data-ml="items_count">등록 품목</div>
+          <div class="stat-val" id="d-items">0</div>
+          <div class="stat-desc" data-ml="items_unit">아이템 수</div>
+        </div>
+        <div class="stat-card" style="--c:var(--accent)">
+          <div class="stat-lbl" data-ml="today_in">오늘 입고</div>
+          <div class="stat-val" id="d-in-qty">0</div>
+          <div class="stat-desc" id="d-in-cnt">0건</div>
+        </div>
+        <div class="stat-card" style="--c:var(--orange)">
+          <div class="stat-lbl" data-ml="today_out">오늘 출고</div>
+          <div class="stat-val" id="d-out-qty">0</div>
+          <div class="stat-desc" id="d-out-cnt">0건</div>
+        </div>
+        <div class="stat-card" style="--c:var(--danger)">
+          <div class="stat-lbl" data-ml="expiry_warn">D-30 이내</div>
+          <div class="stat-val" id="d-exp">0</div>
+          <div class="stat-desc" id="d-exp-sub" data-ml="exp_sub">임박·만료</div>
+        </div>
+      </div>
+
+      <div class="section-box">
+        <div class="section-title" data-ml="type_ratio">타입별 재고</div>
+        <div class="type-row">
+          <div class="type-ico">❄️</div>
+          <div class="type-info">
+            <div class="type-name" data-ml="frozen">냉동</div>
+            <div class="type-bar-bg"><div class="type-bar" id="bar-frozen" style="width:0%;background:var(--frozen)"></div></div>
+          </div>
+          <div class="type-qty" id="qty-frozen">0</div>
+        </div>
+        <div class="type-row">
+          <div class="type-ico">🧊</div>
+          <div class="type-info">
+            <div class="type-name" data-ml="chilled">냉장</div>
+            <div class="type-bar-bg"><div class="type-bar" id="bar-chilled" style="width:0%;background:var(--chilled)"></div></div>
+          </div>
+          <div class="type-qty" id="qty-chilled">0</div>
+        </div>
+        <div class="type-row">
+          <div class="type-ico">📦</div>
+          <div class="type-info">
+            <div class="type-name" data-ml="dry">드라이</div>
+            <div class="type-bar-bg"><div class="type-bar" id="bar-dry" style="width:0%;background:var(--dry)"></div></div>
+          </div>
+          <div class="type-qty" id="qty-dry">0</div>
+        </div>
+      </div>
+
+      <div class="section-box">
+        <div class="section-title" data-ml="today_activity">오늘 입출고</div>
+        <div class="today-row">
+          <div class="t
+
+oday-left">
+            <div class="today-badge t-in">↓</div>
+            <div>
+              <div class="today-lbl" data-ml="stock_in">입고</div>
+              <div class="today-name" id="today-in-name">—</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="today-big" style="color:var(--accent)" id="today-in-val">0</div>
+            <div class="today-unit">ctn</div>
+          </div>
+        </div>
+        <div class="today-row">
+          <div class="today-left">
+            <div class="today-badge t-out">↑</div>
+            <div>
+              <div class="today-lbl" data-ml="stock_out">출고</div>
+              <div class="today-name" id="today-out-name">—</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="today-big" style="color:var(--orange)" id="today-out-val">0</div>
+            <div class="today-unit">ctn</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="alert-header" data-ml="expiry_alerts">유통기한 주의</div>
+        <div id="alert-list"></div>
+      </div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div class="panel" id="panel-inventory">
+      <div class="toolbar">
+        <input class="search" id="inv-q" placeholder="🔍 제품명, 바코드..." oninput="renderInventory()">
+        <select class="fsel" id="inv-tf" onchange="renderInventory()">
+          <option value="">전체</option>
+          <option value="냉동">❄️</option>
+          <option value="냉장">🧊</option>
+          <option value="드라이">📦</option>
+        </select>
+      </div>
+      <!-- 재고있음/없음 탭 -->
+      <div style="display:flex;gap:3px;margin:0 0 10px;background:rgba(255,255,255,.06);border-radius:8px;padding:3px">
+        <button id="m-inv-tab-active" onclick="switchMobileInvTab('active',this)"
+          style="flex:1;background:#4ade80;color:#0f0e0c;font-size:12px;padding:7px;border-radius:6px;border:none;cursor:pointer;font-weight:700">
+          📦 재고있음 <span id="m-inv-cnt-active" style="font-size:10px;opacity:.7"></span>
+        </button>
+        <button id="m-inv-tab-zero" onclick="switchMobileInvTab('zero',this)"
+          style="flex:1;background:transparent;color:#888;font-size:12px;padding:7px;border-radius:6px;border:none;cursor:pointer">
+          ⭕ 재고없음 <span id="m-inv-cnt-zero" style="font-size:10px;opacity:.7"></span>
+        </button>
+      </div>
+      <div id="inv-list"></div>
+    </div>
+
+    <!-- SLIPS -->
+    <div class="panel" id="panel-slips">
+      <div class="slip-tabs">
+        <button class="slip-tab in-active" id="slip-btn-in" onclick="setSlipTab('in',this)" data-ml="slip_in">↓ 입고 이력</button>
+        <button class="slip-tab" id="slip-btn-out" onclick="setSlipTab('out',this)" data-ml="slip_out">↑ 출고 이력</button>
+      </div>
+      <div id="slip-in-list"></div>
+      <div id="slip-out-list" style="display:none"></div>
+    </div>
+
+    <!-- EXPIRY -->
+    <div class="panel" id="panel-expiry">
+      <div id="expiry-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<nav class="bottomnav">
+  <button class="bn active" onclick="showTab('dashboard',this)">
+    <span class="bn-ico">▦</span><span data-ml="dashboard">대시보드</span><span class="bn-line"></span>
+  </button>
+  <button class="bn" onclick="showTab('inventory',this)">
+    <span class="bn-ico">📦</span><span data-ml="inventory">재고</span><span class="bn-line"></span>
+  </button>
+  <button class="bn" onclick="showTab('slips',this)">
+    <span class="bn-ico">↕</span><span data-ml="slips">입출고</span><span class="bn-line"></span>
+  </button>
+  <button class="bn" onclick="showTab('expiry',this)">
+    <span class="bn-ico">⚠️</span><span data-ml="expiry">유통기한</span><span class="bn-line"></span>
+  </button>
+</nav>
+
+<script>
+// GAS URL / KEY는 코드에 저장하지 않음 — 첫 실행 시 설정에서 입력
+var GAS_URL = '';
+var GAS_KEY = '';
+// localStorage에 저장된 설정이 있으면 불러오기
+(function(){
+  try{
+    const s=localStorage.getItem('fwms2_viewer_cfg');
+    if(s){ const p=JSON.parse(s); if(p.url) GAS_URL=p.url; if(p.key) GAS_KEY=p.key; }
+  }catch(e){}
+})();
+
+var DB = null;
+// 날짜 표시: YYYY-MM-DD → DD-MM-YYYY
+const fD=d=>{ if(!d||d.length<10) return d||'—'; return d.slice(8,10)+'-'+d.slice(5,7)+'-'+d.slice(0,4); };
+
+var LANG = 'ko';
+var LANG_PACK = {
+  ko:{
+    dashboard:'대시보드', inventory:'재고', slips:'입출고', expiry:'유통기한',
+    total_stock:'총 재고', items_count:'등록 품목', items_unit:'아이템 수',
+    today_in:'오늘 입고', today_out:'오늘 출고',
+    expiry_warn:'D-90 이내', type_ratio:'타입별 재고', today_activity:'오늘 입출고',
+    expiry_alerts:'유통기한 주의', frozen:'냉동', chilled:'냉장', dry:'드라이',
+    stock_in:'입고', stock_out:'출고', expired:'만료', no_alerts:'임박 재고 없음',
+    loading:'불러오는 중...', readonly:'읽기 전용',
+    slip_in:'↓ 입고 이력', slip_out:'↑ 출고 이력',
+    no_stock:'재고 없음', no_data:'데이터 없음',
+    settings:'설정', save_refresh:'저장 후 새로고침',
+    gas_url:'Apps Script URL', secret_key:'비밀키',
+    connect_test:'연결 테스트', cancel:'취소',
+    d30_within:'30일 이내', d90_within:'31~90일',
+    stock_with:'재고있음', stock_zero:'재고없음',
+    ctn:'ctn', no_slip:'입출고 이력 없음',
+    no_expiry:'임박 재고 없음',
+    exp_sub:'임박·만료',
+  },
+  id:{
+    dashboard:'Dasbor', inventory:'Stok', slips:'Transaksi', expiry:'Kadaluarsa',
+    total_stock:'Total Stok', items_count:'Jumlah Item', items_unit:'jumlah item',
+    today_in:'Masuk Hari Ini', today_out:'Keluar Hari Ini',
+    expiry_warn:'dalam 30 hari', type_ratio:'Stok per Tipe', today_activity:'Aktivitas Hari Ini',
+    expiry_alerts:'Peringatan Kadaluarsa', frozen:'Beku', chilled:'Dingin', dry:'Kering',
+    stock_in:'Masuk', stock_out:'Keluar', expired:'Kadaluarsa', no_alerts:'Tidak ada stok hampir kadaluarsa',
+    loading:'Memuat...', readonly:'Hanya Baca',
+    slip_in:'↓ Riwayat Masuk', slip_out:'↑ Riwayat Keluar',
+    no_stock:'Stok kosong', no_data:'Tidak ada data',
+    settings:'Pengaturan', save_refresh:'Simpan & Muat Ulang',
+    gas_url:'URL Web App', secret_key:'Kunci Rahasia',
+    connect_test:'Tes Koneksi', cancel:'Batal',
+    d30_within:'dalam 30 hari', d90_within:'31~90 hari',
+    stock_with:'Ada Stok', stock_zero:'Stok Habis',
+    ctn:'ktn', no_slip:'Tidak ada riwayat',
+    no_expiry:'Tidak ada stok hampir kadaluarsa',
+    exp_sub:'Hampir·Kadaluarsa',
+  }
+};
+function L(k){ return (LANG_PACK[LANG]||LANG_PACK.ko)[k]||(LANG_PACK.ko)[k]||k; }
+
+function openMobileSettings(){
+  document.getElementById('ms-url').value=GAS_URL||'';
+  document.getElementById('ms-key').value=GAS_KEY||'';
+  document.getElementById('ms-new-pw').value='';
+  document.getElementById('ms-test-result').textContent='';
+  document.getElementById('m-msettings').style.display='flex';
+}
+function closeMobileSettings(){
+  document.getElementById('m-msettings').style.display='none';
+}
+function saveMobileSettings(){
+  const url=document.getElementById('ms-url').value.trim();
+  const key=document.getElementById('ms-key').value.trim();
+  if(!url){document.getElementById('ms-test-result').textContent='❌ URL을 입력하세요';return;}
+  GAS_URL=url; GAS_KEY=key;
+  try{localStorage.setItem('fwms2_viewer_cfg',JSON.stringify({url,key}));}catch(e){}
+  // 비밀번호 저장
+  saveViewerPw();
+  closeMobileSettings();
+  loadData();
+}
+async function testMobileConn(){
+  const url=document.getElementById('ms-url').value.trim();
+  const res=document.getElementById('ms-test-result');
+  if(!url){res.textContent='❌ URL 필요';return;}
+  res.textContent='⟳ 테스트 중...';
+  try{
+    const j=await gasFetch(url+'?action=ping');
+    if(j.ok){res.textContent='✅ 연결 성공!';res.style.color='#4ade80';}
+    else{res.textContent='❌ '+j.error;res.style.color='#f87171';}
+  }catch(e){res.textContent='❌ '+e.message;res.style.color='#f87171';}
+}
+
+function toggleLang(){
+  LANG=LANG==='ko'?'id':'ko';
+  try{ localStorage.setItem('fwms2_mobile_lang',LANG); }catch(e){}
+  applyMobileLang();
+  if(DB) renderAll();
+}
+function applyMobileLang(){
+  // 언어 버튼
+  const lb=document.getElementById('m-lang-btn');
+  if(lb) lb.textContent='🌐 '+(LANG==='ko'?'KO':'ID');
+  // 헤더 서브
+  const sub=document.querySelector('.hlogo-sub');
+  if(sub) sub.textContent=L('readonly');
+  // 입출고 탭
+  const sib=document.getElementById('slip-btn-in');
+  const sob=document.getElementById('slip-btn-out');
+  if(sib) sib.textContent=L('slip_in');
+  if(sob) sob.textContent=L('slip_out');
+  // 재고 탭 버튼
+  const tba=document.getElementById('m-inv-tab-active');
+  const tbz=document.getElementById('m-inv-tab-zero');
+  if(tba) tba.childNodes[0].textContent=L('stock_with')+' ';
+  if(tbz) tbz.childNodes[0].textContent=L('stock_zero')+' ';
+  // 설정 모달
+  const msTitle=document.querySelector('#m-msettings [style*="font-size:14px"]');
+  if(msTitle) msTitle.textContent='⚙️ '+L('settings');
+  // data-ml 속성으로 번역 적용
+  document.querySelectorAll('[data-ml]').forEach(el=>{
+    el.textContent=L(el.getAttribute('data-ml'));
+  });
+}
+
+function showTab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo(0,0);
+}
+function setSlipTab(t){
+  document.getElementById('slip-in-list').style.display  = t==='in' ?'block':'none';
+  document.getElementById('slip-out-list').style.display = t==='out'?'block':'none';
+  document.getElementById('slip-btn-in').className  = 'slip-tab '+(t==='in' ?'in-active':'');
+  document.getElementById('slip-btn-out').className = 'slip-tab '+(t==='out'?'out-active':'');
+}
+
+async function gasFetch(url){
+  try{
+    const res=await fetch(url,{method:'GET',redirect:'follow'});
+    const text=await res.text();
+    return JSON.parse(text.trim().replace(/^[^(]*\(/,'').replace(/\);?\s*$/,''));
+  }catch(e){
+    return new Promise((resolve,reject)=>{
+      const cb='_wms_'+Date.now();
+      const sc=document.createElement('script');
+      const tm=setTimeout(()=>{cleanup();reject(new Error('연결 시간 초과'));},12000);
+      function cleanup(){clearTimeout(tm);delete window[cb];sc.parentNode&&sc.parentNode.removeChild(sc);}
+      window[cb]=d=>{cleanup();resolve(d);};
+      sc.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+      sc.onerror=()=>{cleanup();reject(new Error('URL 확인 필요'));};
+      document.head.appendChild(sc);
+    });
+  }
+}
+
+async function loadData(){
+  if(!GAS_URL){
+    document.getElementById('loading').style.display='none';
+    const eb=document.getElementById('error-box');
+    eb.style.display='block';
+    eb.innerHTML='<div style="font-size:13px">⚙️ <strong>URL 미설정</strong><br>상단 ⚙️ 버튼을 눌러 Apps Script URL을 입력하세요.</div>';
+    return;
+  }
+  const fab=document.getElementById('fab');
+  fab.classList.add('spinning');
+  document.getElementById('error-box').style.display='none';
+  try{
+    const json=await gasFetch(GAS_URL+'?action=read');
+    if(!json.ok) throw new Error(json.error||'서버 오류');
+    if(!json.data) throw new Error('데이터 없음 — WMS에서 동기화 먼저');
+    DB=json.data;
+    // 회사정보 적용
+    if(DB.companyInfo){
+      const co=DB.companyInfo;
+      const ico=document.querySelector('.hlogo-ico');
+      if(ico) ico.innerHTML=co.logoType==='image'&&co.logoImg
+        ?`<img src="${co.logoImg}" style="width:32px;height:32px;object-fit:contain;border-radius:8px">`
+        :co.logo||'🥡';
+      const nm=document.querySelector('.hlogo-name');
+      if(nm) nm.textContent=co.name||'식품 WMS';
+    }
+    document.getElementById('loading').style.display='none';
+    document.getElementById('main-content').style.display='block';
+    const n=new Date();
+    document.getElementById('last-updated').textContent=
+      (n.getMonth()+1)+'/'+(n.getDate())+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+    applyMobileLang();
+    renderAll();
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    const eb=document.getElementById('error-box');
+    eb.style.display='block';
+    eb.innerHTML='❌ '+e.message;
+  }finally{
+    fab.classList.remove('spinning');
+  }
+}
+
+const TODAY=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const itemById=id=>(DB.items||[]).find(i=>i.id===id);
+const tbadge=t=>t==='냉동'?'tb-frozen':t==='냉장'?'tb-chilled':'tb-dry';
+const tico=t=>t==='냉동'?'❄️':t==='냉장'?'🧊':'📦';
+const tname=t=>t==='냉동'?L('frozen'):t==='냉장'?L('chilled'):L('dry');
+
+function calcStock(){
+  const s={};
+  // ── adj를 itemId+expiry 기준 최신 1개만 수집 ──
+  const adjMap={};
+  (DB.adj||[]).forEach(a=>{
+    const key=a.itemId+'|'+a.expiry;
+    if(!adjMap[key]||a.updatedAt>adjMap[key].updatedAt) adjMap[key]=a;
+  });
+  // oldExpiry가 다른 경우(유통기한 변경) 구 키 제거
+  Object.values(adjMap).forEach(a=>{
+    if(a.oldExpiry&&a.oldExpiry!==a.expiry){
+      const oldKey=a.itemId+'|'+a.oldExpiry;
+      delete adjMap[oldKey];
+    }
+  });
+  // ── adj가 있는 품목+유통기한: adj 확정값 기준으로 계산 ──
+  Object.values(adjMap).forEach(a=>{
+    if(!s[a.itemId])s[a.itemId]={};
+    let delta=0;
+    (DB.slips_in||[]).forEach(slip=>slip.lines.forEach(l=>{
+      if(l.itemId!==a.itemId||l.expiry!==a.expiry) return;
+      const slipTs=slip.createdAt||slip.date+'T23:59:59.999Z';
+      if(slipTs>a.updatedAt) delta+=Number(l.qty);
+    }));
+    (DB.slips_out||[]).forEach(slip=>slip.lines.forEach(l=>{
+      if(l.itemId!==a.itemId||l.expiry!==a.expiry) return;
+      const slipTs=slip.createdAt||slip.date+'T23:59:59.999Z';
+      if(slipTs>a.updatedAt) delta-=Number(l.qty);
+    }));
+    s[a.itemId][a.expiry]=Number(a.qty)+delta;
+  });
+  // ── adj 없는 품목+유통기한: 입출고 전표로만 계산 ──
+  (DB.slips_in||[]).forEach(slip=>slip.lines.forEach(l=>{
+    const key=l.itemId+'|'+l.expiry;
+    if(adjMap[key]) return;
+    if(!s[l.itemId])s[l.itemId]={};
+    s[l.itemId][l.expiry]=(s[l.itemId][l.expiry]||0)+Number(l.qty);
+  }));
+  (DB.slips_out||[]).forEach(slip=>slip.lines.forEach(l=>{
+    const key=l.itemId+'|'+l.expiry;
+    if(adjMap[key]) return;
+    if(!s[l.itemId])s[l.itemId]={};
+    s[l.itemId][l.expiry]=(s[l.itemId][l.expiry]||0)-Number(l.qty);
+  }));
+  return s;
+}
+
+function renderAll(){renderDashboard();renderInventory();renderSlips();renderExpiry();}
+
+function renderDashboard(){
+  const stock=calcStock(),today=TODAY();
+  let total=0,frozen=0,chilled=0,dry=0,exp30=0,exp90=0,expired=0;
+
+  (DB.items||[]).filter(i=>i.active!==false).forEach(item=>{
+    Object.entries(stock[item.id]||{}).forEach(([e,q])=>{
+      if(q<=0)return;
+      total+=q;
+      if(item.type==='냉동')frozen+=q;
+      else if(item.type==='냉장')chilled+=q;
+      else dry+=q;
+      const dl=Math.ceil((new Date(e)-new Date(today))/86400000);
+      if(dl<=0)expired++; else if(dl<=30)exp30++; else if(dl<=90)exp90++;
+    });
+  });
+
+  document.getElementById('d-total').textContent=total.toLocaleString();
+  document.getElementById('d-items').textContent=(DB.items||[]).length;
+  document.getElementById('d-summary').textContent=
+    '품목 '+(DB.items||[]).length+'개 · 만료 '+expired+'건 · D-30 '+exp30+'건';
+  document.getElementById('d-exp').textContent=expired+exp30+exp90;
+
+  // 오늘 입출고
+  const todayIn=(DB.slips_in||[]).filter(s=>s.date===today);
+  const todayOut=(DB.slips_out||[]).filter(s=>s.date===today);
+  const inQty=todayIn.reduce((a,s)=>a+s.lines.reduce((b,l)=>b+l.qty,0),0);
+  const outQty=todayOut.reduce((a,s)=>a+s.lines.reduce((b,l)=>b+l.qty,0),0);
+  document.getElementById('d-in-qty').textContent=inQty.toLocaleString();
+  document.getElementById('d-in-cnt').textContent=todayIn.length+'건';
+  document.getElementById('d-out-qty').textContent=outQty.toLocaleString();
+  document.getElementById('d-out-cnt').textContent=todayOut.length+'건';
+
+  if(todayIn.length){
+    const names=[...new Set(todayIn.map(s=>(DB.suppliers||[]).find(x=>x.id===s.supplierId)?.name||'—'))];
+    document.getElementById('today-in-name').textContent=names.slice(0,2).join(', ')+(names.length>2?' 외 '+(names.length-2)+'곳':'');
+    document.getElementById('today-in-val').textContent=inQty.toLocaleString();
+  } else {
+    document.getElementById('today-in-name').textContent='입고 없음';
+    document.getElementById('today-in-val').textContent='0';
+  }
+  if(todayOut.length){
+    const names=[...new Set(todayOut.map(s=>(DB.customers||[]).find(x=>x.id===s.customerId)?.name||'—'))];
+    document.getElementById('today-out-name').textContent=names.slice(0,2).join(', ')+(names.length>2?' 외 '+(names.length-2)+'곳':'');
+    document.getElementById('today-out-val').textContent=outQty.toLocaleString();
+  } else {
+    document.getElementById('today-out-name').textContent='출고 없음';
+    document.getElementById('today-out-val').textContent='0';
+  }
+
+  // 타입 바
+  const mx=Math.max(frozen,chilled,dry,1);
+  document.getElementById('bar-frozen').style.width=(frozen/mx*100)+'%';
+  document.getElementById('bar-chilled').style.width=(chilled/mx*100)+'%';
+  document.getElementById('bar-dry').style.width=(dry/mx*100)+'%';
+  document.getElementById('qty-frozen').textContent=frozen.toLocaleString()+' ctn';
+  document.getElementById('qty-chilled').textContent=chilled.toLocaleString()+' ctn';
+  document.getElementById('qty-dry').textContent=dry.toLocaleString()+' ctn';
+
+  // 알림
+  const d30l=new Date();d30l.setDate(d30l.getDate()+90);
+  let alerts=[];
+  (DB.items||[]).filter(i=>i.active!==false).forEach(item=>{
+    Object.entries(stock[item.id]||{}).filter(([e,q])=>q>0&&new Date(e)<=d30l).forEach(([e,q])=>{
+      const dl=Math.ceil((new Date(e)-new Date(today))/86400000);
+      alerts.push({item,expiry:e,qty:q,dl});
+    });
+  });
+  alerts.sort((a,b)=>a.dl-b.dl||b.qty-a.qty);
+  const al=document.getElementById('alert-list');
+  if(!alerts.length){
+    al.innerHTML='<div class="no-alert">✅&nbsp; 임박 재고 없음</div>';
+    return;
+  }
+  al.innerHTML=alerts.map(a=>{
+    const cls=a.dl<=0?'d0':a.dl<=30?'d7':'d30';
+    const pill=a.dl<=0?L('expired'):a.dl<=7?'D-'+a.dl:'D-'+a.dl;
+    const nm=a.item.name.length>18?a.item.name.slice(0,17)+'…':a.item.name;
+    return `<div class="alert-card ${cls}">
+      <div style="flex:1;min-width:0">
+        <div class="alert-name">${nm}</div>
+        <div class="alert-meta">${a.item.brand} · ${fD(a.expiry)} · ${tico(a.item.type)}</div>
+      </div>
+      <div style="text-align:right;margin-left:10px">
+        <div><span class="dday-pill ${cls}">${pill}</span></div>
+        <div class="alert-qty">${a.qty.toLocaleString()} ctn</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderInventory(){
+  const q=(document.getElementById('inv-q')?.value||'').toLowerCase();
+  const tf=document.getElementById('inv-tf')?.value||'';
+  const stock=calcStock(),today=TODAY();
+  const allItems=(DB.items||[]).filter(i=>i.active!==false&&(!q||(i.name+i.brand+(i.barcode||'')).toLowerCase().includes(q))&&(!tf||i.type===tf));
+  const withStock=[],noStock=[];
+  allItems.forEach(i=>{
+    const total=Object.values(stock[i.id]||{}).reduce((s,v)=>s+(v>0?v:0),0);
+    if(total>0) withStock.push(i); else noStock.push(i);
+  });
+  const ca=document.getElementById('m-inv-cnt-active');
+  const cz=document.getElementById('m-inv-cnt-zero');
+  if(ca) ca.textContent='('+withStock.length+')';
+  if(cz) cz.textContent='('+noStock.length+')';
+  const TAB=window._mobileInvTab||'active';
+  const items=TAB==='zero'?noStock:withStock;
+  if(!items.length){
+    document.getElementById('inv-list').innerHTML='<div class="empty"><div class="empty-ico">'+(TAB==='zero'?'&#10003;':'&#128230;')+'</div>'+(TAB==='zero'?L('no_stock'):L('no_data'))+'</div>';
+    return;
+  }
+  if(TAB==='zero'){
+    document.getElementById('inv-list').innerHTML=items.map(item=>`
+      <div class="item-card" style="opacity:.6">
+        <div class="item-head">
+          <div><div class="item-name">${item.name}</div><div class="item-brand">${item.brand} · 입수 ${item.inner}ctn</div></div>
+          <div style="text-align:right">
+            <div class="item-total" style="color:#666">0<span class="item-unit"> ctn</span></div>
+            <span class="type-badge ${tbadge(item.type)}">${tico(item.type)} ${tname(item.type)}</span>
+          </div>
+        </div>
+      </div>`).join('');
+    return;
+  }
+  document.getElementById('inv-list').innerHTML=items.map(item=>{
+    const is=stock[item.id]||{};
+    const exps=Object.entries(is).filter(([,q])=>q>0).sort(([a],[b])=>a.localeCompare(b));
+    const total=exps.reduce((s,[,q])=>s+q,0);
+    const expHTML=exps.map(([e,q])=>{
+      const dl=Math.ceil((new Date(e)-new Date(today))/86400000);
+      const cls=dl<=0?'xdanger':dl<=7?'xwarn7':dl<=30?'xwarn30':'';
+      const note=dl<=0?L('expired'):dl<=30?'D-'+dl:'';
+      return `<div class="exp-row ${cls}"><span class="exp-date">${e}${note?`<span class="exp-note">${note}</span>`:''}</span><span class="exp-qty">${q.toLocaleString()}<span style="font-size:10px;color:var(--text3)"> ctn</span></span></div>`;
+    }).join('');
+    return `<div class="item-card">
+      <div class="item-head">
+        <div><div class="item-name">${item.name}</div><div class="item-brand">${item.brand} · 입수 ${item.inner}ctn</div></div>
+        <div style="text-align:right">
+          <div class="item-total">${total.toLocaleString()}<span class="item-unit"> ctn</span></div>
+          <span class="type-badge ${tbadge(item.type)}">${tico(item.type)} ${tname(item.type)}</span>
+        </div>
+      </div>
+      <div class="exp-rows">${expHTML}</div>
+    </div>`;
+  }).join('');
+}
+
+function switchMobileInvTab(tab,el){
+  window._mobileInvTab=tab;
+  document.querySelectorAll('#m-inv-tab-active,#m-inv-tab-zero').forEach(b=>{
+    b.style.background='transparent'; b.style.color='#888'; b.style.fontWeight='';
+  });
+  el.style.background='#4ade80'; el.style.color='#0f0e0c'; el.style.fontWeight='700';
+  renderInventory();
+}
+
+function openSlipDetail(type, id){
+  const slip = type==='in'
+    ? (DB.slips_in||[]).find(s=>s.id===id)
+    : (DB.slips_out||[]).find(s=>s.id===id);
+  if(!slip) return;
+  const isIn = type==='in';
+  const partner = isIn
+    ? (DB.suppliers||[]).find(x=>x.id===slip.supplierId)
+    : (DB.customers||[]).find(x=>x.id===slip.customerId);
+  const totalQty = slip.lines.reduce((a,l)=>a+l.qty,0);
+  const color = isIn ? 'var(--accent)' : 'var(--warn)';
+  const badgeTxt = isIn ? '↓ 입고' : '↑ 출고';
+  const badgeCls = isIn ? 'in-b' : 'out-b';
+
+  const rows = slip.lines.map((l,i)=>{
+    const item = (DB.items||[]).find(x=>x.id===l.itemId);
+    const dl = Math.ceil((new Date(l.expiry)-new Date(TODAY()))/86400000);
+    const dCls = dl<=0?'color:var(--danger)':dl<=30?'color:var(--warn)':'color:var(--text2)';
+    const dLbl = dl<=0?'만료':'D-'+dl;
+    return `<div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1;min-width:0;padding-right:10px">
+        <div style="font-weight:600;font-size:13px">${item?item.name:l.itemId}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${item?item.brand:''} ${l.barcode?'· '+l.barcode:''}</div>
+        <div style="font-size:11px;margin-top:3px;${dCls}">📅 ${fD(l.expiry)} <span style="font-size:10px">${dLbl}</span></div>
+      </div>
+      <div style="text-align:right;white-space:nowrap">
+        <div style="font-size:18px;font-weight:800;font-family:var(--mono);color:${color}">${l.qty.toLocaleString()}</div>
+        <div style="font-size:10px;color:var(--text3)">ctn</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('slip-detail-modal').innerHTML=`
+    <div onclick="this.parentNode.style.display='none'" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:center">
+      <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:18px 18px 0 0;width:100%;max-width:480px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:16px 16px 12px;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="slip-badge ${badgeCls}">${badgeTxt}</span>
+                <span style="font-family:var(--mono);font-size:13px;font-weight:700">${slip.id}</span>
+              </div>
+              <div style="font-size:12px;color:var(--text3);margin-top:4px">${slip.date} · ${partner?partner.name:'—'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:${color}">${totalQty.toLocaleString()}</div>
+              <div style="font-size:10px;color:var(--text3)">${slip.lines.length}품목 · ctn</div>
+            </div>
+          </div>
+        </div>
+        <div style="overflow-y:auto;flex:1;padding:0 16px">
+          ${rows}
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border)">
+          <button onclick="document.getElementById('slip-detail-modal').innerHTML='';document.getElementById('slip-detail-modal').style.display='none'" style="width:100%;background:var(--text);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">닫기</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('slip-detail-modal').style.display='block';
+}
+
+function renderSlips(){
+  const ibs=[...(DB.slips_in||[])].reverse().slice(0,50);
+  const obs=[...(DB.slips_out||[])].reverse().slice(0,50);
+  document.getElementById('slip-in-list').innerHTML=ibs.length?ibs.map(s=>{
+    const sup=(DB.suppliers||[]).find(x=>x.id===s.supplierId);
+    return `<div class="slip-card" onclick="openSlipDetail('in','${s.id}')" style="cursor:pointer;active:opacity:.8">
+      <div class="slip-head"><span class="slip-badge in-b">↓ 입고</span><span class="slip-id">${s.id}</span><span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
+      <div class="slip-partner">${sup?sup.name:'—'}</div>
+      <div class="slip-foot"><span class="slip-date">${s.date}</span>
+        <div class="slip-nums">
+          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
+          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val inv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty"><div class="empty-ico">📋</div>${L('no_slip')}</div>`;
+  document.getElementById('slip-out-list').innerHTML=obs.length?obs.map(s=>{
+    const cus=(DB.customers||[]).find(x=>x.id===s.customerId);
+    return `<div class="slip-card" onclick="openSlipDetail('out','${s.id}')" style="cursor:pointer">
+      <div class="slip-head"><span class="slip-badge out-b">↑ 출고</span><span class="slip-id">${s.id}</span><span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
+      <div class="slip-partner">${cus?cus.name:'—'}</div>
+      <div class="slip-foot"><span class="slip-date">${s.date}</span>
+        <div class="slip-nums">
+          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
+          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val outv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty"><div class="empty-ico">📋</div>${L('no_slip')}</div>`;
+}
+
+function renderExpiry(){
+  const stock=calcStock(),today=TODAY();
+  const d90=new Date(); d90.setDate(d90.getDate()+90);
+  const urgent=[],warn90=[];
+  (DB.items||[]).filter(i=>i.active!==false).forEach(item=>{
+    Object.entries(stock[item.id]||{}).filter(([e,q])=>q>0&&new Date(e)<=d90).forEach(([e,q])=>{
+      const dl=Math.ceil((new Date(e)-new Date(today))/86400000);
+      (dl<=30?urgent:warn90).push({item,expiry:e,qty:q,dl});
+    });
+  });
+  urgent.sort((a,b)=>a.dl-b.dl);
+  warn90.sort((a,b)=>a.dl-b.dl);
+  const makeCard=r=>`
+    <div class="exp-card ${r.dl<=0?'xdanger':''}">
+      <div class="exp-card-head">
+        <div>
+          <div class="exp-card-name">${r.item.name}</div>
+          <div class="exp-card-sub">${r.item.brand} &#183; <span class="type-badge ${tbadge(r.item.type)}" style="padding:1px 5px;font-size:9px">${tico(r.item.type)} ${tname(r.item.type)}</span></div>
+        </div>
+        <div class="dday-big ${r.dl<=0?'de':r.dl<=7?'dd':'dw'}">${r.dl<=0?L('expired'):'D-'+r.dl}</div>
+      </div>
+      <div class="exp-card-foot">
+        <div style="font-size:11px;font-family:var(--mono);color:var(--text3)">&#128197; ${r.expiry}</div>
+        <div style="font-size:16px;font-weight:800;font-family:var(--mono)">${r.qty.toLocaleString()} <span style="font-size:10px;color:var(--text3)">ctn</span></div>
+      </div>
+    </div>`;
+  let html='';
+  if(urgent.length) html+=`<div style="font-size:11px;font-weight:700;color:#fb923c;padding:8px 4px 4px">&#9888; ${L('d30_within')} (${urgent.length})</div>`+urgent.map(makeCard).join('');
+  if(warn90.length) html+=`<div style="font-size:11px;font-weight:700;color:#888;padding:12px 4px 4px">&#128197; ${L('d90_within')} (${warn90.length})</div>`+warn90.map(makeCard).join('');
+  document.getElementById('expiry-list').innerHTML=html||'<div class="empty"><div class="empty-ico">&#10003;</div>임박 재고 없음</div>';
+}
+
+try{ const s=localStorage.getItem('fwms2_mobile_lang'); if(s) LANG=s; }catch(e){}
+applyMobileLang();
+
+// ── 비밀번호 잠금 ──
+const LOCK_KEY = 'fwms2_viewer_pw';
+const SESSION_KEY = 'fwms2_viewer_unlocked';
+
+function getStoredPw(){ try{ return localStorage.getItem(LOCK_KEY)||''; }catch(e){return '';} }
+function isUnlocked(){ try{ return sessionStorage.getItem(SESSION_KEY)==='1'; }catch(e){return false;} }
+function setUnlocked(){ try{ sessionStorage.setItem(SESSION_KEY,'1'); }catch(e){} }
+
+function checkLock(){
+  const pw = getStoredPw();
+  if(!pw || isUnlocked()){
+    // 비밀번호 미설정이거나 이미 인증된 세션
+    startApp();
+    return;
+  }
+  showLockScreen();
+}
+
+function showLockScreen(){
+  document.getElementById('lock-screen').style.display='flex';
+  setTimeout(()=>document.getElementById('lock-input').focus(), 300);
+}
+
+function hideLockScreen(){
+  document.getElementById('lock-screen').style.display='none';
+}
+
+function submitLock(){
+  const input = document.getElementById('lock-input').value;
+  const stored = getStoredPw();
+  if(input === stored){
+    setUnlocked();
+    hideLockScreen();
+    startApp();
+  } else {
+    const err = document.getElementById('lock-error');
+    err.style.display='block';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+    setTimeout(()=>err.style.display='none', 2000);
+  }
+}
+
+function startApp(){
+  loadData();
+  setInterval(loadData, 5*60*1000);
+}
+
+// 설정에서 비밀번호 변경
+function saveViewerPw(){
+  const np = document.getElementById('ms-new-pw').value.trim();
+  if(np){
+    localStorage.setItem(LOCK_KEY, np);
+    setUnlocked(); // 설정 후 바로 인증 상태
+  } else {
+    localStorage.removeItem(LOCK_KEY);
+  }
+}
+
+checkLock();
+</script>
+
+<!-- 잠금 화면 -->
+<div id="lock-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:32px">
+  <div style="font-size:48px;margin-bottom:16px">🔒</div>
+  <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px">WMS Viewer</div>
+  <div style="font-size:13px;color:var(--text3);margin-bottom:32px">비밀번호를 입력하세요</div>
+  <div style="width:100%;max-width:320px">
+    <input id="lock-input" type="password" placeholder="비밀번호"
+      onkeydown="if(event.key==='Enter')submitLock()"
+      style="width:100%;box-sizing:border-box;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;color:var(--text);outline:none;text-align:center;letter-spacing:4px">
+    <div id="lock-error" style="display:none;color:var(--danger);font-size:12px;text-align:center;margin-top:10px">❌ 비밀번호가 틀렸습니다</div>
+    <button onclick="submitLock()" style="width:100%;margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">확인</button>
+  </div>
+</div>
+
+<div id="slip-detail-modal" style="display:none"></div>
+
+<!-- Settings Modal -->
+<div id="m-msettings" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:9999;align-items:flex-end;justify-content:center">
+  <div style="background:#1e1c18;border-radius:18px 18px 0 0;padding:24px;width:100%;max-width:480px;box-shadow:0 -10px 40px rgba(0,0,0,.5)">
+    <div style="width:40px;height:4px;background:#444;border-radius:2px;margin:0 auto 20px"></div>
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:16px">⚙️ 연결 설정</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:5px">Apps Script 웹앱 URL <span style="color:#4ade80">*</span></div>
+        <input id="ms-url" type="text" placeholder="https://script.google.com/macros/s/..."
+          style="width:100%;box-sizing:border-box;background:#2a2823;border:1px solid #333;border-radius:8px;padding:10px 12px;font-size:11px;color:#fff;font-family:monospace;outline:none">
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:5px">비밀키</div>
+        <input id="ms-key" type="text" placeholder="WMS2025!"
+          style="width:100%;box-sizing:border-box;background:#2a2823;border:1px solid #333;border-radius:8px;padding:10px 12px;font-size:11px;color:#fff;outline:none">
+      </div>
+      <div style="border-top:1px solid #333;padding-top:12px;margin-top:4px">
+        <div style="font-size:11px;color:#888;margin-bottom:5px">🔒 뷰어 접속 비밀번호 <span style="color:#666">(비우면 잠금 해제)</span></div>
+        <input id="ms-new-pw" type="password" placeholder="비밀번호 설정 (선택)"
+          style="width:100%;box-sizing:border-box;background:#2a2823;border:1px solid #333;border-radius:8px;padding:10px 12px;font-size:13px;color:#fff;outline:none">
+      </div>
+      <div id="ms-test-result" style="font-size:11px;min-height:16px;color:#888"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="testMobileConn()" style="flex:1;background:#2a2823;border:1px solid #333;color:#aaa;border-radius:8px;padding:12px;font-size:12px;cursor:pointer">🔍 테스트</button>
+      <button onclick="closeMobileSettings()" style="flex:1;background:#2a2823;border:1px solid #333;color:#aaa;border-radius:8px;padding:12px;font-size:12px;cursor:pointer">취소</button>
+      <button onclick="saveMobileSettings()" style="flex:2;background:#4ade80;border:none;color:#0f0e0c;border-radius:8px;padding:12px;font-size:12px;font-weight:700;cursor:pointer">저장 후 새로고침</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
