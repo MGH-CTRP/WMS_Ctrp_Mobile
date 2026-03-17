@@ -594,7 +594,7 @@ async function loadData(){
   fab.classList.add('spinning');
   document.getElementById('error-box').style.display='none';
   try{
-    const json=await gasFetch(GAS_URL+'?action=read');
+    const json=await gasFetch(GAS_URL+'?action=read&key='+encodeURIComponent(GAS_KEY));
     if(!json.ok) throw new Error(json.error||'서버 오류');
     if(!json.data) throw new Error('데이터 없음 — WMS에서 동기화 먼저');
     DB=json.data;
