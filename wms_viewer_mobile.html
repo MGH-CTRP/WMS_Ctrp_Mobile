@@ -339,7 +339,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="toolbar">
         <input class="search" id="inv-q" placeholder="🔍 제품명, 바코드..." oninput="renderInventory()">
         <select class="fsel" id="inv-tf" onchange="renderInventory()">
-          <option value="">전체</option>
+          <option value="" id="inv-opt-all">전체</option>
           <option value="냉동">❄️</option>
           <option value="냉장">🧊</option>
           <option value="드라이">📦</option>
@@ -454,6 +454,7 @@ var LANG_PACK = {
     exp_sub:'임박·만료',
     sup_import:'🌐 수입', sup_local:'🏠 로컬',
     cases:'건',
+    qty:'수량',
   },
   id:{
     dashboard:'Dasbor', inventory:'Stok', slips:'Transaksi', expiry:'Kadaluarsa',
@@ -475,6 +476,7 @@ var LANG_PACK = {
     exp_sub:'Hampir·Kadaluarsa',
     sup_import:'🌐 Impor', sup_local:'🏠 Lokal',
     cases:' transaksi',
+    qty:'Jml',
   }
 };
 function L(k){ return (LANG_PACK[LANG]||LANG_PACK.ko)[k]||(LANG_PACK.ko)[k]||k; }
@@ -542,9 +544,25 @@ function applyMobileLang(){
   // 수입/로컬 필터 옵션 갱신
   const ibTypeM=document.getElementById('ib-type-m');
   if(ibTypeM&&ibTypeM.options.length>=3){
+    ibTypeM.options[0].text=LANG==='id'?'Semua':'전체';
     ibTypeM.options[1].text=L('sup_import');
     ibTypeM.options[2].text=L('sup_local');
   }
+  // 재고 검색 placeholder 갱신
+  const invQ=document.getElementById('inv-q');
+  if(invQ) invQ.placeholder='🔍 '+(LANG==='id'?'Nama produk, barcode...':'제품명, 바코드...');
+  // 재고 타입 필터 옵션
+  const invTf=document.getElementById('inv-tf');
+  if(invTf&&invTf.options.length>=4){
+    invTf.options[0].text=LANG==='id'?'Semua':'전체';
+  }
+  const invOptAll=document.getElementById('inv-opt-all');
+  if(invOptAll) invOptAll.text=LANG==='id'?'Semua':'전체';
+  // 검색 placeholder 갱신
+  const ibQm=document.getElementById('ib-q-m');
+  const obQm=document.getElementById('ob-q-m');
+  if(ibQm) ibQm.placeholder='🔍 '+(LANG==='id'?'Pemasok...':'서플라이어...');
+  if(obQm) obQm.placeholder='🔍 '+(LANG==='id'?'Pelanggan...':'커스터머...');
 }
 
 function showTab(name,el){
@@ -564,22 +582,27 @@ function setSlipTab(t){
 }
 
 async function gasFetch(url){
-  try{
-    const res=await fetch(url,{method:'GET',redirect:'follow'});
-    const text=await res.text();
-    return JSON.parse(text.trim().replace(/^[^(]*\(/,'').replace(/\);?\s*$/,''));
-  }catch(e){
-    return new Promise((resolve,reject)=>{
-      const cb='_wms_'+Date.now();
-      const sc=document.createElement('script');
-      const tm=setTimeout(()=>{cleanup();reject(new Error('연결 시간 초과'));},12000);
-      function cleanup(){clearTimeout(tm);delete window[cb];sc.parentNode&&sc.parentNode.removeChild(sc);}
-      window[cb]=d=>{cleanup();resolve(d);};
-      sc.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
-      sc.onerror=()=>{cleanup();reject(new Error('URL 확인 필요'));};
-      document.head.appendChild(sc);
-    });
-  }
+  // JSONP 방식 우선 사용 (CORS 우회)
+  return new Promise((resolve,reject)=>{
+    const cb='_wms_'+Date.now();
+    const sc=document.createElement('script');
+    const tm=setTimeout(()=>{
+      cleanup();
+      fetch(url,{method:'GET',redirect:'follow'})
+        .then(r=>r.text())
+        .then(t=>resolve(JSON.parse(t.trim().replace(/^[^(]*\(/,'').replace(/\);?\s*$/,''))))
+        .catch(()=>reject(new Error('연결 시간 초과')));
+    },30000);
+    function cleanup(){
+      clearTimeout(tm);
+      delete window[cb];
+      if(sc.parentNode) sc.parentNode.removeChild(sc);
+    }
+    window[cb]=d=>{cleanup();resolve(d);};
+    sc.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    sc.onerror=()=>{cleanup();reject(new Error('URL 확인 필요'));};
+    document.head.appendChild(sc);
+  });
 }
 
 async function loadData(){
@@ -794,7 +817,7 @@ function renderInventory(){
     document.getElementById('inv-list').innerHTML=items.map(item=>`
       <div class="item-card" style="opacity:.6">
         <div class="item-head">
-          <div><div class="item-name">${item.name}</div><div class="item-brand">${item.brand} · 입수 ${item.inner}ctn</div></div>
+          <div><div class="item-name">${item.name}</div><div class="item-brand">${item.brand} · ${LANG==='id'?'Isi':'입수'} ${item.inner}ctn</div></div>
           <div style="text-align:right">
             <div class="item-total" style="color:#666">0<span class="item-unit"> ctn</span></div>
             <span class="type-badge ${tbadge(item.type)}">${tico(item.type)} ${tname(item.type)}</span>
@@ -815,7 +838,7 @@ function renderInventory(){
     }).join('');
     return `<div class="item-card">
       <div class="item-head">
-        <div><div class="item-name">${item.name}</div><div class="item-brand">${item.brand} · 입수 ${item.inner}ctn</div></div>
+        <div><div class="item-name">${item.name}</div><div class="item-brand">${item.brand} · ${LANG==='id'?'Isi':'입수'} ${item.inner}ctn</div></div>
         <div style="text-align:right">
           <div class="item-total">${total.toLocaleString()}<span class="item-unit"> ctn</span></div>
           <span class="type-badge ${tbadge(item.type)}">${tico(item.type)} ${tname(item.type)}</span>
@@ -873,12 +896,12 @@ function renderSlips(){
   document.getElementById('slip-in-list').innerHTML=ibs.length?ibs.map(s=>{
     const sup=(DB.suppliers||[]).find(x=>x.id===s.supplierId);
     return `<div class="slip-card" onclick="openSlipDetail('in','${s.id}')" style="cursor:pointer">
-      <div class="slip-head"><span class="slip-badge in-b">↓ 입고</span><span class="slip-id">${s.id}</span>${sup?supTypeBadge(sup.supType):''}<span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
+      <div class="slip-head"><span class="slip-badge in-b">↓ ${L('stock_in')}</span><span class="slip-id">${s.id}</span>${sup?supTypeBadge(sup.supType):''}<span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 ${LANG==='id'?'Detail':'상세'}</span></div>
       <div class="slip-partner">${sup?sup.name:'—'}</div>
       <div class="slip-foot"><span class="slip-date">${s.date}</span>
         <div class="slip-nums">
-          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
-          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val inv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
+          <div><div class="slip-num-lbl">${L('items_unit')}</div><div class="slip-num-val">${s.lines.length}</div></div>
+          <div><div class="slip-num-lbl">${L('qty')}</div><div class="slip-num-val inv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
         </div>
       </div>
     </div>`;
@@ -887,12 +910,12 @@ function renderSlips(){
   document.getElementById('slip-out-list').innerHTML=obs.length?obs.map(s=>{
     const cus=(DB.customers||[]).find(x=>x.id===s.customerId);
     return `<div class="slip-card" onclick="openSlipDetail('out','${s.id}')" style="cursor:pointer">
-      <div class="slip-head"><span class="slip-badge out-b">↑ 출고</span><span class="slip-id">${s.id}</span><span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 상세</span></div>
+      <div class="slip-head"><span class="slip-badge out-b">↑ ${L('stock_out')}</span><span class="slip-id">${s.id}</span><span style="margin-left:auto;font-size:11px;color:var(--text3)">🔍 ${LANG==='id'?'Detail':'상세'}</span></div>
       <div class="slip-partner">${cus?cus.name:'—'}</div>
       <div class="slip-foot"><span class="slip-date">${s.date}</span>
         <div class="slip-nums">
-          <div><div class="slip-num-lbl">품목</div><div class="slip-num-val">${s.lines.length}</div></div>
-          <div><div class="slip-num-lbl">수량</div><div class="slip-num-val outv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
+          <div><div class="slip-num-lbl">${L('items_unit')}</div><div class="slip-num-val">${s.lines.length}</div></div>
+          <div><div class="slip-num-lbl">${L('qty')}</div><div class="slip-num-val outv">${s.lines.reduce((a,l)=>a+l.qty,0).toLocaleString()}</div></div>
         </div>
       </div>
     </div>`;
@@ -946,7 +969,7 @@ function openSlipDetail(type, id){
             </div>
             <div style="text-align:right">
               <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:${color}">${totalQty.toLocaleString()}</div>
-              <div style="font-size:10px;color:var(--text3)">${slip.lines.length}품목 · ctn</div>
+              <div style="font-size:10px;color:var(--text3)">${slip.lines.length} ${L('items_unit')} · ${L('ctn')}</div>
             </div>
           </div>
         </div>
