@@ -807,6 +807,11 @@ function renderInventory(){
   const cz=document.getElementById('m-inv-cnt-zero');
   if(ca) ca.textContent='('+withStock.length+')';
   if(cz) cz.textContent='('+noStock.length+')';
+  // 브랜드 오름차순 → 제품명 오름차순 정렬
+  const sortItems=arr=>arr.sort((a,b)=>a.brand.localeCompare(b.brand)||a.name.localeCompare(b.name));
+  sortItems(withStock);
+  sortItems(noStock);
+
   const TAB=window._mobileInvTab||'active';
   const items=TAB==='zero'?noStock:withStock;
   if(!items.length){
